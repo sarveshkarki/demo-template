@@ -341,97 +341,49 @@ Mapper
 UI type
 ```
 
-This also makes backend changes easier to catch because a changed field or type will usually show up in the mapper rather than causing an unexpected `undefined` somewhere deep inside a dashboard component.
-
 ---
 
-# Gradual migration from mock data
+Testing the login flow without the APAX backend
 
-I would not replace all of the existing mock state at once.
+Since the backend login endpoint was not working correctly, I added a small temporary mock server in:
 
-For the first dashboard integration, the API data can populate the existing Zustand state while the current mock data remains available as a fallback.
+mock-login-server.js
 
-That gives us:
+This is only intended for testing the frontend login flow and does not change the actual frontend authentication implementation.
 
-- The existing demo still works without a backend.
-- The dashboard can use real API data when the endpoint is available.
-- The existing UI components do not need to be rewritten.
-- Other views can be migrated using the same pattern later.
+To run it, open a separate terminal from the project root and run:
 
-Once the Dashboard and Proof of Reserve views are working with real data, the same approach can be applied to the Redemption and Zakat views.
+node mock-login-server.js
 
----
+It starts a local server on:
 
-# How this was verified
+http://localhost:4000
 
-The assessment was initially worked on in an environment where `npm install` was not possible because the npm registry was not reachable.
+The mock server implements the same:
 
-Because of that, I could not run the normal:
-
-```text
-next build
-next lint
-```
-
-commands in that environment.
-
-I manually reviewed the changed files and also ran a standalone TypeScript check using lightweight type stubs for the dependencies used by the changed files.
-
-After that, I tested the frontend login flow locally using a small stand-in server for:
-
-```text
 POST /user/login
-```
 
-The following flow was verified:
+endpoint expected by the frontend.
 
-```text
+For a successful login, use:
+
+Email: test@apax.com
+Password: password123
+
+The mock server returns a response containing a test JWT and user object, which allows the frontend flow to be tested:
+
 Login
-  ↓
+↓
+API request
+↓
 Loading state
-  ↓
+↓
 Successful response
-  ↓
+↓
 JWT + user stored
-  ↓
+↓
 Redirect to /dashboard
-```
 
-I also tested the failure case and confirmed that the API error is displayed in the login page instead of using a browser alert.
+I also tested the failed-login case using incorrect credentials to verify that the inline error message is displayed.
 
-Before merging, I would still run the full project checks against the actual repository:
-
-```bash
-npm install
-npm run dev
-npm run lint
-```
-
-and, where applicable:
-
-```bash
-npm run build
-```
-
----
-
-# If I were continuing this as a full-stack task
-
-If I were continuing beyond the frontend scope, I would approach it in roughly this order:
-
-1. Implement `User.getJWTToken()`.
-2. Fix the cookie/Bearer authentication mismatch.
-3. Get MongoDB running and test register → login → `/user/me`.
-4. Add `GET /api/holdings`.
-5. Connect the Dashboard to the real holdings data.
-6. Add the activity endpoint and connect the Proof of Reserve activity feed.
-7. Add basic security improvements such as Helmet, login rate limiting and a proper CORS allowlist.
-8. Move on to the token mint/burn contract work once authentication and the real data flow are working.
-
-I would avoid doing the blockchain integration before the authentication and data layer are stable, since the contract would otherwise be working against incomplete or mocked application data.
-
----
-
-**GitHub username:** _[fill in]_
-
-**Rough weekly availability:** _[fill in]_
+The mock server is a separate development/testing file and is not intended to be used as part of the actual application backend.
