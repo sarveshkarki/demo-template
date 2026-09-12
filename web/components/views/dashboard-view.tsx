@@ -1,11 +1,13 @@
-'use client'
+'use client';
 
-import Image from 'next/image'
-import { PortfolioOverview } from '@/components/portfolio-overview'
-import { AssetAllocationChart } from '@/components/asset-allocation-chart'
-import { ShariaCertificationHub } from '@/components/sharia-certification-hub'
+import Image from 'next/image';
+import { PortfolioOverview } from '@/components/portfolio-overview';
+import { AssetAllocationChart } from '@/components/asset-allocation-chart';
+import { ShariaCertificationHub } from '@/components/sharia-certification-hub';
+import { useAuthStore } from '@/lib/auth-store';
 
 export function DashboardView() {
+  const firstName = useAuthStore((state) => state.user?.name?.split(' ')[0]);
   return (
     <div className="space-y-4 md:space-y-6 stagger-in max-w-7xl mx-auto overflow-hidden">
       {/* Live Ledger Ticker */}
@@ -18,7 +20,9 @@ export function DashboardView() {
                 <span className="text-terminal-sm">Network Connectivity: 100%</span>
               </div>
               <span className="text-terminal-sm">Latest Block: #8,421,093</span>
-              <span className="text-terminal-sm text-[#D4AF37]">Vault A1-X: Re-verified by Lead Auditor</span>
+              <span className="text-terminal-sm text-[#D4AF37]">
+                Vault A1-X: Re-verified by Lead Auditor
+              </span>
               <span className="text-terminal-sm">Last Synced: 2s ago</span>
             </div>
           ))}
@@ -29,17 +33,12 @@ export function DashboardView() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl md:text-2xl font-serif font-bold text-[#E8E8E8]">
-            Welcome back, John!
+            Welcome back{firstName ? `,${firstName}` : ''}!
           </h1>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative h-10 w-10 md:h-12 md:w-12 overflow-hidden rounded-lg gold-glow">
-            <Image
-              src="/images/apax-logo.png"
-              alt="APAX Emblem"
-              fill
-              className="object-cover"
-            />
+            <Image src="/images/apax-logo.png" alt="APAX Emblem" fill className="object-cover" />
           </div>
         </div>
       </div>
@@ -55,5 +54,5 @@ export function DashboardView() {
         <ShariaCertificationHub />
       </div>
     </div>
-  )
+  );
 }
