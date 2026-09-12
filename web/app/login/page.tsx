@@ -1,61 +1,78 @@
-'use client'
+'use client';
 
-import React from "react"
+import React from 'react';
 
-import { useState } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Wallet, EnvelopeSimple, LockKey, CaretRight, Eye, EyeSlash, ShieldCheck } from '@phosphor-icons/react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { loginApi } from '@/lib/services/login.api';
+import { useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  Wallet,
+  EnvelopeSimple,
+  LockKey,
+  CaretRight,
+  Eye,
+  EyeSlash,
+  ShieldCheck,
+} from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { loginApi, toAuthUser } from '@/lib/services/login.api';
+import { useMutation } from '@tanstack/react-query';
+import { useAuthStore } from '@/lib/auth-store';
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [vaultOpening, setVaultOpening] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const router = useRouter();
+  const setAuth = useAuthStore((state) => state.setAuth);
+
+  const [showPassword, setShowPassword] = useState(false);
+  // isLoading is here only for the mock wallet-connect flow below;
+  // the email/password login's pending state comes from reqct query loginMutation.
+  const [isLoading, setIsLoading] = useState(false);
+  const [vaultOpening, setVaultOpening] = useState(false);
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  const loginMutation = useMutation({
+    mutationFn: loginApi,
+  });
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    // setIsLoading(true)
-    const res = await loginApi({ email, password })
-    console.log(res)
-    //NEED TO CLEAN UP ONCE ALL DONE, didn't get time due to mongodb connection issue.
-    // Simulate authentication delay
-    // await new Promise(resolve => setTimeout(resolve, 1000))
+    e.preventDefault();
+    setLoginError(null);
 
-    // Trigger vault door animation
-    // setVaultOpening(true)
+    const res = await loginMutation.mutateAsync({ email, password });
 
-    // Navigate after animation
-    // await new Promise(resolve => setTimeout(resolve, 1000))
-    // router.push('/dashboard')
-    if(res.data) {
-      router.push('/dashbaord')
-    } else {
-      alert('Something went wrong')
+    if (res.success && res.data?.token && res.data?.user) {
+      setAuth(res.data.token, toAuthUser(res.data.user));
+
+      // Brief vault door animation
+      setVaultOpening(true);
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      router.push('/dashboard');
+      return;
     }
-  }
+
+    setLoginError(res.message || 'Invalid email or password.');
+  };
 
   const handleWalletConnect = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
 
     // Simulate wallet connection
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Trigger vault door animation
-    setVaultOpening(true)
+    setVaultOpening(true);
 
     // Navigate after animation
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    router.push('/dashboard')
-  }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    router.push('/dashboard');
+  };
 
   return (
     <div className="min-h-screen bg-radial-obsidian flex items-center justify-center p-4 relative overflow-hidden">
@@ -69,7 +86,7 @@ export default function LoginPage() {
           className="absolute inset-0 opacity-5"
           style={{
             backgroundImage: `radial-gradient(circle at center, #D4AF37 1px, transparent 1px)`,
-            backgroundSize: '40px 40px'
+            backgroundSize: '40px 40px',
           }}
         />
       </div>
@@ -209,7 +226,9 @@ export default function LoginPage() {
             <TabsContent value="email">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-[#C0C0C0]">Email</Label>
+                  <Label htmlFor="email" className="text-[#C0C0C0]">
+                    Email
+                  </Label>
                   <div className="relative">
                     <EnvelopeSimple className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#888888]" />
                     <Input
@@ -225,7 +244,9 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-[#C0C0C0]">Password</Label>
+                  <Label htmlFor="password" className="text-[#C0C0C0]">
+                    Password
+                  </Label>
                   <div className="relative">
                     <LockKey className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#888888]" />
                     <Input
@@ -242,17 +263,26 @@ export default function LoginPage() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888888] hover:text-[#C0C0C0]"
                     >
-                      {showPassword ? <EyeSlash className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPassword ? (
+                        <EyeSlash className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
                   <label className="flex items-center gap-2 text-[#888888]">
-                    <input type="checkbox" className="rounded border-[#2A2A2A] bg-[#1A1A1A] text-[#D4AF37] focus:ring-[#D4AF37]/20" />
+                    <input
+                      type="checkbox"
+                      className="rounded border-[#2A2A2A] bg-[#1A1A1A] text-[#D4AF37] focus:ring-[#D4AF37]/20"
+                    />
                     Remember me
                   </label>
-                  <a href="#" className="text-[#D4AF37] hover:text-[#E6C861]">Forgot password?</a>
+                  <a href="#" className="text-[#D4AF37] hover:text-[#E6C861]">
+                    Forgot password?
+                  </a>
                 </div>
 
                 <Button
@@ -293,5 +323,5 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
-  )
+  );
 }
